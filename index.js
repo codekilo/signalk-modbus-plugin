@@ -1,8 +1,10 @@
+const PLUGIN_ID = 'signalk-modbus-plugin';
+const PLUGIN_NAME = 'SignalK Modbus plugin';
 module.exports = function (app) {
   var plugin = {};
 
-  plugin.id = 'signalk-modbus-plugin';
-  plugin.name = 'SignalK Modbus plugin';
+  plugin.id = PLUGIN_NAME;
+  plugin.name = PLUGIN_NAME;
   plugin.description = 'Plugin to import data via modbus';
 
   plugin.start = function (options, restartPlugin) {
@@ -17,6 +19,15 @@ module.exports = function (app) {
 
   plugin.schema = {
     // The plugin schema
+    title: PLUGIN_NAME,
+    type: 'object',
+    properties: {
+      pollingInterval: {
+        type: 'number',
+        title: "Interval (in seconds) to poll device",
+        default: 20
+      }
+    }
   };
 
   return plugin;
