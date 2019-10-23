@@ -3,13 +3,15 @@ const PLUGIN_NAME = 'SignalK Modbus plugin';
 module.exports = function (app) {
   var plugin = {};
 
-  plugin.id = PLUGIN_NAME;
+  plugin.id = PLUGIN_ID;
   plugin.name = PLUGIN_NAME;
   plugin.description = 'Plugin to import data via modbus';
 
   plugin.start = function (options, restartPlugin) {
     // Here we put our plugin logic
+    plugin.options = options;
     app.debug('Plugin started');
+    app.debug(options);
   };
 
   plugin.stop = function () {
