@@ -1,0 +1,22 @@
+{
+  "name": "signalk-modbus-plugin",
+  "version": "0.0.1",
+  "description": "a plugin for SignalK to read data via modbus",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/codekilo/signalk-modbus-plugin.git"
+  },
+  "keywords": [
+    "signalk-node-server-plugin"
+  ],
+  "author": "",
+  "license": "UNLICENSED",
+  "bugs": {
+    "url": "https://github.com/codekilo/signalk-modbus-plugin/issues"
+  },
+  "homepage": "https://github.com/codekilo/signalk-modbus-plugin#readme"
+}
