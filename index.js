@@ -4,7 +4,7 @@ module.exports = function (app) {
   var plugin = {};
   var ModbusRTU = require("modbus-serial");
   var client = new ModbusRTU();
-  var timer;
+  var timers = [];
 
   plugin.id = PLUGIN_ID;
   plugin.name = PLUGIN_NAME;
@@ -56,13 +56,14 @@ module.exports = function (app) {
     client.connectTCP(options.connection.ip, { port: options.connection.port });
     client.setID(options.slaveID);
     // setup timer to poll modbus server
-    timer = setInterval(pollModbus, options.pollingInterval*1000, client, options.mapping, options.slaveID);
+    options.mappings.forEach(mapping =>timers.push(setInterval(pollModbus, options.pollingInterval*1000, client, mapping, options.slaveID)));
+
   };
 
   plugin.stop = function () {
     // Here we put logic we need when the plugin stops
     app.debug('Plugin stopped');
-    clearInterval(timer);
+    timers.forEach(timer => clearInterval(timer));
     //client.close();
   };
 
@@ -97,32 +98,36 @@ module.exports = function (app) {
         title: "SlaveID",
         default: 0
       },
-      mapping: {
-        type: 'object',
-        title: 'Map register to SignalK path',
-        properties: {
-          operation: {
-            type: 'string',
-            title: 'operation type',
-            enum: ['fc1', 'fc2', 'fc3', 'fc4'],
-            enumNames: [
-              'read coil (FC1)',
-              'read discrete input (FC2)',
-              'read holding register (FC3)',
-              'read input register (FC4)'
-            ],
-            default: 'fc3'
-            },
-            register: {
-              type: 'number',
-              title: 'register',
-              default: 11
-            },
-            path: {
+      mappings: {
+        title: 'map registers to SignalK paths',
+        type: 'array',
+        items: {
+          type: 'object',
+          title: 'Map register to SignalK path',
+          properties: {
+            operation: {
               type: 'string',
-              title: "Path to store data",
-              default: "modbus.test"
-            }
+              title: 'operation type',
+              enum: ['fc1', 'fc2', 'fc3', 'fc4'],
+              enumNames: [
+                'read coil (FC1)',
+                'read discrete input (FC2)',
+                'read holding register (FC3)',
+                'read input register (FC4)'
+              ],
+              default: 'fc3'
+              },
+              register: {
+                type: 'number',
+                title: 'register',
+                default: 11
+              },
+              path: {
+                type: 'string',
+                title: "Path to store data",
+                default: "modbus.test"
+              }
+          }
         }
       }
     }
