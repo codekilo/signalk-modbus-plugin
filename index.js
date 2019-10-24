@@ -18,13 +18,7 @@ module.exports = function (app) {
       value: data.data[0]
     }],
       context: app.getSelfPath('uuid'),
-      source: {
-        label: "modbus-tcp",
-        type: 'modbus',
-        src: '0',
-        register: '11',
-        fc: 'fc3'
-        },
+      $source:"modbus-tcp.0.11.fc3",
       timestamp: new Date().toISOString()
    };
 
