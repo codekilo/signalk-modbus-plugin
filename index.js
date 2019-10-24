@@ -29,7 +29,23 @@ module.exports = function (app) {
    }
 
   function pollModbus(client, mapping,slaveID) {
-      client.readHoldingRegisters(mapping.register, 1).then(data => handleData(data,mapping,slaveID));
+    switch (String(mapping.operation)) {
+      case 'fc1': 
+        client.readCoils(mapping.register, 1)
+        .then(data => handleData(data,mapping,slaveID));
+        break;
+        case 'fc2':
+        client.readDiscreteInputs(mapping.register, 1)
+        .then(data => handleData(data,mapping,slaveID));
+        break;
+      case 'fc3':
+        client.readHoldingRegisters(mapping.register, 1)
+        .then(data => handleData(data,mapping,slaveID));
+        break;
+      case 'fc4':
+      client.readInputRegisters(mapping.register, 1)
+      .then(data => handleData(data,mapping,slaveID));
+    }
   }
 
   plugin.start = function (options, restartPlugin) {
@@ -88,8 +104,10 @@ module.exports = function (app) {
           operation: {
             type: 'string',
             title: 'operation type',
-            enum: ['fc3', 'fc4'],
+            enum: ['fc1', 'fc2', 'fc3', 'fc4'],
             enumNames: [
+              'read coil (FC1)',
+              'read discrete input (FC2)',
               'read holding register (FC3)',
               'read input register (FC4)'
             ],
