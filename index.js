@@ -11,8 +11,29 @@ module.exports = function (app) {
   plugin.description = 'Plugin to import data via modbus';
 
   function handleData(err,data) {
-    console.log(data);
-  }
+    app.debug(data);
+    delta = {
+      values: [{
+      path: "modbus.test",
+      value: data.data[0]
+    }],
+      context: app.getSelfPath('uuid'),
+      source: {
+        label: "modbus-tcp",
+        type: 'modbus',
+        src: '0',
+        register: '11',
+        fc: 'fc3'
+        },
+      timestamp: new Date().toISOString()
+   };
+
+   deltas = {
+    updates: [delta]
+    };
+    app.handleMessage(PLUGIN_ID,deltas);
+   }
+
   function pollModbus(client, mapping) {
       client.readHoldingRegisters(mapping.register, 1, handleData);
   }
@@ -21,10 +42,10 @@ module.exports = function (app) {
     // Here we put our plugin logic
     plugin.options = options;
     app.debug('Plugin started');
-    app.debug(options);
-    //connect to modbus server
+    // connect to modbus server
     client.connectTCP(options.connection.ip, { port: options.connection.port });
     client.setID(options.slaveID);
+    // setup timer to poll modbus server
     timer = setInterval(pollModbus, options.pollingInterval*1000, client, options.mapping);
   };
 
