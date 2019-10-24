@@ -10,15 +10,15 @@ module.exports = function (app) {
   plugin.name = PLUGIN_NAME;
   plugin.description = 'Plugin to import data via modbus';
 
-  function handleData(err,data) {
+  function handleData(data,mapping,slaveID) {
     app.debug(data);
     delta = {
       values: [{
-      path: "modbus.test",
+      path: mapping.path,
       value: data.data[0]
     }],
       context: app.getSelfPath('uuid'),
-      $source:"modbus-tcp.0.11.fc3",
+      $source:"modbus-tcp." + slaveID + "." + mapping.register + "." + mapping.operation,
       timestamp: new Date().toISOString()
    };
 
@@ -28,8 +28,8 @@ module.exports = function (app) {
     app.handleMessage(PLUGIN_ID,deltas);
    }
 
-  function pollModbus(client, mapping) {
-      client.readHoldingRegisters(mapping.register, 1, handleData);
+  function pollModbus(client, mapping,slaveID) {
+      client.readHoldingRegisters(mapping.register, 1).then(data => handleData(data,mapping,slaveID));
   }
 
   plugin.start = function (options, restartPlugin) {
@@ -40,7 +40,7 @@ module.exports = function (app) {
     client.connectTCP(options.connection.ip, { port: options.connection.port });
     client.setID(options.slaveID);
     // setup timer to poll modbus server
-    timer = setInterval(pollModbus, options.pollingInterval*1000, client, options.mapping);
+    timer = setInterval(pollModbus, options.pollingInterval*1000, client, options.mapping, options.slaveID);
   };
 
   plugin.stop = function () {
@@ -102,7 +102,8 @@ module.exports = function (app) {
             },
             path: {
               type: 'string',
-              title: "Path to store data"
+              title: "Path to store data",
+              default: "modbus.test"
             }
         }
       }
