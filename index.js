@@ -70,10 +70,9 @@ module.exports = function(app) {
   }
 
   plugin.start = function(options, restartPlugin) {
-    // Here we put our plugin logic
     plugin.options = options;
     app.debug('Plugin started');
-    // connect to modbus server
+    // connect to modbus server stop plugin if connection couldn't be established.
     client.connectTCP(options.connection.ip, {
       port: options.connection.port
     }).catch(function(error) {
@@ -88,15 +87,12 @@ module.exports = function(app) {
   };
 
   plugin.stop = function() {
-    // Here we put logic we need when the plugin stops
     app.debug('Plugin stopped');
     timers.forEach(timer => clearInterval(timer));
-    //client.close();
     app.setProviderStatus('Stopped');
   };
 
   plugin.schema = {
-    // The plugin schema
     title: PLUGIN_NAME,
     type: 'object',
     properties: {
