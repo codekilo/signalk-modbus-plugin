@@ -36,6 +36,7 @@ module.exports = function (app) {
     * calls handleData to send the data to SignalK
     */
   function pollModbus(client, mapping,slaveID) {
+    client.setID(slaveID);
     switch (String(mapping.operation)) {
       case 'fc1': 
         client.readCoils(mapping.register, 1)
@@ -61,9 +62,8 @@ module.exports = function (app) {
     app.debug('Plugin started');
     // connect to modbus server
     client.connectTCP(options.connection.ip, { port: options.connection.port });
-    client.setID(options.slaveID);
     // setup timer to poll modbus server
-    options.mappings.forEach(mapping =>timers.push(setInterval(pollModbus, options.pollingInterval*1000, client, mapping, options.slaveID)));
+    options.slaves.forEach(slave => slave.mappings.forEach(mapping =>timers.push(setInterval(pollModbus, options.pollingInterval*1000, client, mapping, slave.slaveID))));
 
   };
 
@@ -100,43 +100,54 @@ module.exports = function (app) {
           }
         }
       },
-      slaveID: {
-        type: 'number',
-        title: "SlaveID",
-        default: 0
-      },
-      mappings: {
-        title: 'map registers to SignalK paths',
+      slaves: {
         type: 'array',
+        title: "slaves",
         items: {
           type: 'object',
-          title: 'Map register to SignalK path',
+          title: 'test',
           properties: {
-            operation: {
-              type: 'string',
-              title: 'operation type',
-              enum: ['fc1', 'fc2', 'fc3', 'fc4'],
-              enumNames: [
-                'read coil (FC1)',
-                'read discrete input (FC2)',
-                'read holding register (FC3)',
-                'read input register (FC4)'
-              ],
-              default: 'fc3'
-              },
-              register: {
-                type: 'number',
-                title: 'register',
-                default: 11
-              },
-              path: {
-                type: 'string',
-                title: "Path to store data",
-                default: "modbus.test"
+            slaveID: {
+              type: 'number',
+              title: "SlaveID",
+              default: 0
+            },
+            mappings: {
+              title: 'map registers to SignalK paths',
+              type: 'array',
+              items: {
+                type: 'object',
+                title: 'Map register to SignalK path',
+                properties: {
+                  operation: {
+                    type: 'string',
+                    title: 'operation type',
+                    enum: ['fc1', 'fc2', 'fc3', 'fc4'],
+                    enumNames: [
+                      'read coil (FC1)',
+                      'read discrete input (FC2)',
+                      'read holding register (FC3)',
+                      'read input register (FC4)'
+                    ],
+                    default: 'fc3'
+                    },
+                    register: {
+                      type: 'number',
+                      title: 'register',
+                      default: 11
+                    },
+                    path: {
+                      type: 'string',
+                      title: "Path to store data",
+                      default: "modbus.test"
+                    }
+                }
               }
+            }
           }
         }
       }
+      
     }
   };
 
