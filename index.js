@@ -10,6 +10,9 @@ module.exports = function (app) {
   plugin.name = PLUGIN_NAME;
   plugin.description = 'Plugin to import data via modbus';
 
+  /**
+   * Send a single update to SignalK.
+   */
   function handleData(data,mapping,slaveID) {
     app.debug(data);
     delta = {
@@ -28,6 +31,10 @@ module.exports = function (app) {
     app.handleMessage(PLUGIN_ID,deltas);
    }
 
+   /**
+    * Ask the server for the contents of a single register.
+    * calls handleData to send the data to SignalK
+    */
   function pollModbus(client, mapping,slaveID) {
     switch (String(mapping.operation)) {
       case 'fc1': 
