@@ -32,6 +32,15 @@ module.exports = function(app) {
   }
 
   /**
+   * Logs the error and stops the plugin
+   */
+  function catchError(error) {
+    app.setProviderError("an error occured: " + error.message);
+    app.debug(error);
+    plugin.stop();
+  }
+
+  /**
    * Ask the server for the contents of a single register.
    * calls handleData to send the data to SignalK
    */
@@ -40,19 +49,23 @@ module.exports = function(app) {
     switch (String(mapping.operation)) {
       case 'fc1':
         client.readCoils(mapping.register, 1)
-          .then(data => handleData(data, mapping, slaveID));
+          .then(data => handleData(data, mapping, slaveID))
+          .catch(catchError);
         break;
       case 'fc2':
         client.readDiscreteInputs(mapping.register, 1)
-          .then(data => handleData(data, mapping, slaveID));
+          .then(data => handleData(data, mapping, slaveID))
+          .catch(catchError);
         break;
       case 'fc3':
         client.readHoldingRegisters(mapping.register, 1)
-          .then(data => handleData(data, mapping, slaveID));
+          .then(data => handleData(data, mapping, slaveID))
+          .catch(catchError);
         break;
       case 'fc4':
         client.readInputRegisters(mapping.register, 1)
-          .then(data => handleData(data, mapping, slaveID));
+          .then(data => handleData(data, mapping, slaveID))
+          .catch(catchError);
     }
   }
 
@@ -63,9 +76,14 @@ module.exports = function(app) {
     // connect to modbus server
     client.connectTCP(options.connection.ip, {
       port: options.connection.port
+    }).catch(function(error) {
+      app.setProviderError("an error occured while connecting to the modbus server: " + error.message);
+      plugin.stop();
     });
+
     // setup timer to poll modbus server
     options.slaves.forEach(slave => slave.mappings.forEach(mapping => timers.push(setInterval(pollModbus, options.pollingInterval * 1000, client, mapping, slave.slaveID))));
+    app.setProviderStatus("Running");
 
   };
 
@@ -74,6 +92,7 @@ module.exports = function(app) {
     app.debug('Plugin stopped');
     timers.forEach(timer => clearInterval(timer));
     //client.close();
+    app.setProviderStatus('Stopped');
   };
 
   plugin.schema = {
