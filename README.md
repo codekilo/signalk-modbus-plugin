@@ -1,4 +1,4 @@
-#SignalK-modbus-plugin
+# SignalK-modbus-plugin
 
 This plugin is designed to read arbitrary modbus data and convert it into signalk data.
 
