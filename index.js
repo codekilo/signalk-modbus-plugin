@@ -69,6 +69,7 @@ module.exports = function(app) {
       .catch(catchError);
   }
 
+  // called when the plugin is started
   plugin.start = function(options, restartPlugin) {
     plugin.options = options;
     app.debug('Plugin started');
@@ -80,18 +81,20 @@ module.exports = function(app) {
       plugin.stop();
     });
 
-    // setup timer to poll modbus server
+    // setup a timer to poll modbus server for each mapping
     options.slaves.forEach(slave => slave.mappings.forEach(mapping => timers.push(setInterval(pollModbus, options.pollingInterval * 1000, client, mapping, slave.slaveID, jexl.compile(mapping.conversion)))));
     app.setProviderStatus("Running");
 
   };
 
+  // called when the plugin is stopped or encounters an error
   plugin.stop = function() {
     app.debug('Plugin stopped');
     timers.forEach(timer => clearInterval(timer));
     app.setProviderStatus('Stopped');
   };
 
+  // The plugin configuration
   plugin.schema = {
     title: PLUGIN_NAME,
     type: 'object',
