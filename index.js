@@ -14,12 +14,12 @@ module.exports = function(app) {
   /**
    * Send a single update to SignalK.
    */
-  function handleData(data, mapping, slaveID) {
+  function handleData(data, mapping, slaveID, expression) {
     app.debug(data);
     context = {
       x: data.data[0]
     };
-    value = jexl.compile(mapping.conversion).evalSync(context);
+    value = expression.evalSync(context);
     delta = {
       values: [{
         path: mapping.path,
@@ -49,29 +49,24 @@ module.exports = function(app) {
    * Ask the server for the contents of a single register.
    * calls handleData to send the data to SignalK
    */
-  function pollModbus(client, mapping, slaveID) {
+  function pollModbus(client, mapping, slaveID, expression) {
     client.setID(slaveID);
+    var promise;
     switch (String(mapping.operation)) {
       case 'fc1':
-        client.readCoils(mapping.register, 1)
-          .then(data => handleData(data, mapping, slaveID))
-          .catch(catchError);
+        promise = client.readCoils(mapping.register, 1);
         break;
       case 'fc2':
-        client.readDiscreteInputs(mapping.register, 1)
-          .then(data => handleData(data, mapping, slaveID))
-          .catch(catchError);
+        promise = client.readDiscreteInputs(mapping.register, 1);
         break;
       case 'fc3':
-        client.readHoldingRegisters(mapping.register, 1)
-          .then(data => handleData(data, mapping, slaveID))
-          .catch(catchError);
+        promise = client.readHoldingRegisters(mapping.register, 1);
         break;
       case 'fc4':
-        client.readInputRegisters(mapping.register, 1)
-          .then(data => handleData(data, mapping, slaveID))
-          .catch(catchError);
+        promise = client.readInputRegisters(mapping.register, 1);
     }
+    promise.then(data => handleData(data, mapping, slaveID, expression))
+      .catch(catchError);
   }
 
   plugin.start = function(options, restartPlugin) {
@@ -86,7 +81,7 @@ module.exports = function(app) {
     });
 
     // setup timer to poll modbus server
-    options.slaves.forEach(slave => slave.mappings.forEach(mapping => timers.push(setInterval(pollModbus, options.pollingInterval * 1000, client, mapping, slave.slaveID))));
+    options.slaves.forEach(slave => slave.mappings.forEach(mapping => timers.push(setInterval(pollModbus, options.pollingInterval * 1000, client, mapping, slave.slaveID, jexl.compile(mapping.conversion)))));
     app.setProviderStatus("Running");
 
   };
