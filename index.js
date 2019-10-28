@@ -4,6 +4,7 @@ module.exports = function(app) {
   var plugin = {};
   var ModbusRTU = require("modbus-serial");
   var client = new ModbusRTU();
+  const jexl = require("jexl");
   var timers = [];
 
   plugin.id = PLUGIN_ID;
@@ -15,10 +16,14 @@ module.exports = function(app) {
    */
   function handleData(data, mapping, slaveID) {
     app.debug(data);
+    context = {
+      x: data.data[0]
+    };
+    value = jexl.compile(mapping.conversion).evalSync(context);
     delta = {
       values: [{
         path: mapping.path,
-        value: data.data[0]
+        value: value
       }],
       context: app.getSelfPath('uuid'),
       $source: "modbus-tcp." + slaveID + "." + mapping.register + "." + mapping.operation,
@@ -157,6 +162,11 @@ module.exports = function(app) {
                     type: 'string',
                     title: "Path to store data",
                     default: "modbus.test"
+                  },
+                  conversion: {
+                    type: 'string',
+                    title: 'conversion expression',
+                    default: "x"
                   }
                 }
               }
