@@ -71,6 +71,7 @@ module.exports = function(app) {
 
   // called when the plugin is started
   plugin.start = function(options, restartPlugin) {
+    app.setProviderStatus("Initializing");
     plugin.options = options;
     app.debug('Plugin started');
     // connect to modbus server stop plugin if connection couldn't be established.
@@ -82,7 +83,14 @@ module.exports = function(app) {
     });
 
     // setup a timer to poll modbus server for each mapping
-    options.slaves.forEach(slave => slave.mappings.forEach(mapping => timers.push(setInterval(pollModbus, options.pollingInterval * 1000, client, mapping, slave.slaveID, jexl.compile(mapping.conversion)))));
+    options.slaves.forEach(
+      slave => slave.mappings.forEach(
+        mapping => timers.push(
+          setInterval(pollModbus, options.pollingInterval * 1000,
+            client, mapping, slave.slaveID, jexl.compile(mapping.conversion))
+        )
+      )
+    );
     app.setProviderStatus("Running");
 
   };
