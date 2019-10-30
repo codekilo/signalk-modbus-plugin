@@ -3,7 +3,7 @@ const PLUGIN_NAME = 'SignalK Modbus plugin';
 module.exports = function(app) {
   var plugin = {};
   var ModbusRTU = require("modbus-serial");
-  var client = new ModbusRTU();
+  var clients = [];
   const jexl = require("jexl");
   var timers = [];
 
@@ -69,30 +69,42 @@ module.exports = function(app) {
       .catch(catchError);
   }
 
+  /**
+   * Setup the connection to a server 
+   * and add create all timers to poll the registers
+   */
+  function setupConnection(connection) {
+    // connect to modbus server stop plugin if connection couldn't be established.
+    client = new ModbusRTU();
+    client.connectTCP(connection.connection.ip, {
+      port: connection.connection.port
+    }).catch(function(error) {
+      app.setProviderError("an error occured while connecting to the modbus server: " + error.message);
+      //plugin.stop();
+    });
+
+    // setup a timer to poll modbus server for each mapping
+    connection.slaves.forEach(
+      slave => slave.mappings.forEach(
+        mapping => timers.push(
+          setInterval(pollModbus, connection.pollingInterval * 1000,
+            client, mapping, slave.slaveID, jexl.compile(mapping.conversion))
+        )
+      )
+    );
+    clients.push(client);
+  }
   // called when the plugin is started
   plugin.start = function(options, restartPlugin) {
     app.setProviderStatus("Initializing");
     plugin.options = options;
     app.debug('Plugin started');
-    // connect to modbus server stop plugin if connection couldn't be established.
-    client.connectTCP(options.connection.ip, {
-      port: options.connection.port
-    }).catch(function(error) {
-      app.setProviderError("an error occured while connecting to the modbus server: " + error.message);
+    options.connections.forEach(setupConnection);
+    if (clients.length == 0) {
       plugin.stop();
-    });
-
-    // setup a timer to poll modbus server for each mapping
-    options.slaves.forEach(
-      slave => slave.mappings.forEach(
-        mapping => timers.push(
-          setInterval(pollModbus, options.pollingInterval * 1000,
-            client, mapping, slave.slaveID, jexl.compile(mapping.conversion))
-        )
-      )
-    );
-    app.setProviderStatus("Running");
-
+    } else {
+      app.setProviderStatus("Running");
+    }
   };
 
   // called when the plugin is stopped or encounters an error
@@ -107,72 +119,82 @@ module.exports = function(app) {
     title: PLUGIN_NAME,
     type: 'object',
     properties: {
-      pollingInterval: {
-        type: 'number',
-        title: "Interval (in seconds) to poll device",
-        default: 20
-      },
-      connection: {
-        type: 'object',
-        title: "connection information",
-        properties: {
-          ip: {
-            type: 'string',
-            title: "ip address",
-            default: "127.0.0.1"
-          },
-          port: {
-            type: 'number',
-            title: "port",
-            default: 8502
-          }
-        }
-      },
-      slaves: {
+      connections: {
         type: 'array',
-        title: "slaves",
+        title: 'Servers:',
         items: {
           type: 'object',
-          title: 'test',
+          title: 'connection',
           properties: {
-            slaveID: {
+            pollingInterval: {
               type: 'number',
-              title: "SlaveID",
-              default: 0
+              title: "Interval (in seconds) to poll device",
+              default: 20
             },
-            mappings: {
-              title: 'map registers to SignalK paths',
+            connection: {
+              type: 'object',
+              title: "connection information",
+              properties: {
+                ip: {
+                  type: 'string',
+                  title: "ip address",
+                  default: "127.0.0.1"
+                },
+                port: {
+                  type: 'number',
+                  title: "port",
+                  default: 8502
+                }
+              }
+            },
+            slaves: {
               type: 'array',
+              title: "slaves",
               items: {
                 type: 'object',
-                title: 'Map register to SignalK path',
+                title: 'Slave',
                 properties: {
-                  operation: {
-                    type: 'string',
-                    title: 'operation type',
-                    enum: ['fc1', 'fc2', 'fc3', 'fc4'],
-                    enumNames: [
-                      'read coil (FC1)',
-                      'read discrete input (FC2)',
-                      'read holding register (FC3)',
-                      'read input register (FC4)'
-                    ],
-                    default: 'fc3'
-                  },
-                  register: {
+                  slaveID: {
                     type: 'number',
-                    title: 'register',
-                    default: 11
+                    title: "SlaveID",
+                    default: 0
                   },
-                  path: {
-                    type: 'string',
-                    title: "Path to store data",
-                    default: "modbus.test"
-                  },
-                  conversion: {
-                    type: 'string',
-                    title: 'conversion expression',
-                    default: "x"
+                  mappings: {
+                    title: 'map registers to SignalK paths',
+                    type: 'array',
+                    items: {
+                      type: 'object',
+                      title: 'Map register to SignalK path',
+                      properties: {
+                        operation: {
+                          type: 'string',
+                          title: 'operation type',
+                          enum: ['fc1', 'fc2', 'fc3', 'fc4'],
+                          enumNames: [
+                            'read coil (FC1)',
+                            'read discrete input (FC2)',
+                            'read holding register (FC3)',
+                            'read input register (FC4)'
+                          ],
+                          default: 'fc3'
+                        },
+                        register: {
+                          type: 'number',
+                          title: 'register',
+                          default: 11
+                        },
+                        path: {
+                          type: 'string',
+                          title: "Path to store data",
+                          default: "modbus.test"
+                        },
+                        conversion: {
+                          type: 'string',
+                          title: 'conversion expression',
+                          default: "x"
+                        }
+                      }
+                    }
                   }
                 }
               }
@@ -180,6 +202,7 @@ module.exports = function(app) {
           }
         }
       }
+
     }
   };
 
