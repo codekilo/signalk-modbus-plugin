@@ -17,10 +17,12 @@ module.exports = function(app) {
    */
   function handleData(data, mapping, slaveID, expression) {
     app.debug(data);
+    // context for jexl, x is the data, other constants can be added here
     var context = {
       x: data.data[0]
     };
     var value = expression.evalSync(context);
+    // denormalized SignalK delta for a single value
     var delta = {
       values: [{
         path: mapping.path,
@@ -75,7 +77,7 @@ module.exports = function(app) {
    * and add create all timers to poll the registers
    */
   function setupConnection(connection) {
-    // connect to modbus server stop plugin if connection couldn't be established.
+    // connect to modbus server.
     var client = new ModbusRTU();
     app.debug("setting up connection to " + connection.connection.ip + ":" + connection.connection.port);
     var promise = client.connectTCP(connection.connection.ip, {
