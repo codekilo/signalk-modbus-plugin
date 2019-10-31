@@ -75,42 +75,46 @@ module.exports = function(app) {
    */
   function setupConnection(connection) {
     // connect to modbus server stop plugin if connection couldn't be established.
-    client = new ModbusRTU();
+    var client = new ModbusRTU();
+    app.debug("setting up connection to " + connection.connection.ip + ":" + connection.connection.port);
     client.connectTCP(connection.connection.ip, {
       port: connection.connection.port
-    }).catch(function(error) {
-      app.setProviderError("an error occured while connecting to the modbus server: " + error.message);
-      //plugin.stop();
+    }).then(function() { // only runs if connectTCP was successful
+      // setup a timer to poll modbus server for each mapping
+      app.debug("setting up timers");
+      connection.slaves.forEach(
+        slave => slave.mappings.forEach(
+          mapping => timers.push(
+            setInterval(pollModbus, connection.pollingInterval * 1000,
+              client, mapping, slave.slaveID, jexl.compile(mapping.conversion))
+          )
+        )
+      );
+      clients.push(client);
+    }, function(error) { //handle errors in the connectTCP method
+      var message = "an error occured while connecting to the modbus server: " +
+        error.message;
+      app.debug(message);
+      app.setProviderError(message);
+      client.close();
     });
 
-    // setup a timer to poll modbus server for each mapping
-    connection.slaves.forEach(
-      slave => slave.mappings.forEach(
-        mapping => timers.push(
-          setInterval(pollModbus, connection.pollingInterval * 1000,
-            client, mapping, slave.slaveID, jexl.compile(mapping.conversion))
-        )
-      )
-    );
-    clients.push(client);
   }
+
   // called when the plugin is started
   plugin.start = function(options, restartPlugin) {
     app.setProviderStatus("Initializing");
     plugin.options = options;
     app.debug('Plugin started');
     options.connections.forEach(setupConnection);
-    if (clients.length == 0) {
-      plugin.stop();
-    } else {
-      app.setProviderStatus("Running");
-    }
+    app.setProviderStatus("Running");
   };
 
   // called when the plugin is stopped or encounters an error
   plugin.stop = function() {
     app.debug('Plugin stopped');
     timers.forEach(timer => clearInterval(timer));
+
     app.setProviderStatus('Stopped');
   };
 
