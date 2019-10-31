@@ -2,7 +2,7 @@ const PLUGIN_ID = 'signalk-modbus-plugin';
 const PLUGIN_NAME = 'SignalK Modbus plugin';
 module.exports = function(app) {
   var plugin = {};
-  var ModbusRTU = require("modbus-serial");
+  const ModbusRTU = require("modbus-serial");
   var clients = [];
   const jexl = require("jexl");
   var timers = [];
@@ -16,11 +16,11 @@ module.exports = function(app) {
    */
   function handleData(data, mapping, slaveID, expression) {
     app.debug(data);
-    context = {
+    var context = {
       x: data.data[0]
     };
-    value = expression.evalSync(context);
-    delta = {
+    var value = expression.evalSync(context);
+    var delta = {
       values: [{
         path: mapping.path,
         value: value
@@ -30,7 +30,7 @@ module.exports = function(app) {
       timestamp: new Date().toISOString()
     };
 
-    deltas = {
+    var deltas = {
       updates: [delta]
     };
     app.handleMessage(PLUGIN_ID, deltas);
@@ -206,7 +206,6 @@ module.exports = function(app) {
           }
         }
       }
-
     }
   };
 
