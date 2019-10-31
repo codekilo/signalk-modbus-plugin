@@ -4,6 +4,7 @@ module.exports = function(app) {
   var plugin = {};
   const ModbusRTU = require("modbus-serial");
   var clients = [];
+  var promises = [];
   const jexl = require("jexl");
   var timers = [];
 
@@ -77,7 +78,7 @@ module.exports = function(app) {
     // connect to modbus server stop plugin if connection couldn't be established.
     var client = new ModbusRTU();
     app.debug("setting up connection to " + connection.connection.ip + ":" + connection.connection.port);
-    client.connectTCP(connection.connection.ip, {
+    var promise = client.connectTCP(connection.connection.ip, {
       port: connection.connection.port
     }).then(function() { // only runs if connectTCP was successful
       // setup a timer to poll modbus server for each mapping
@@ -98,7 +99,7 @@ module.exports = function(app) {
       app.setProviderError(message);
       client.close();
     });
-
+    promises.push(promise);
   }
 
   // called when the plugin is started
@@ -107,7 +108,17 @@ module.exports = function(app) {
     plugin.options = options;
     app.debug('Plugin started');
     options.connections.forEach(setupConnection);
-    app.setProviderStatus("Running");
+    // wait for all promises setup in the loop to resolve
+    Promise.allSettled(promises).then(function() {
+      app.debug('promises resolved');
+      if (clients.length == 0) {
+        app.stop();
+      } else {
+        app.setProviderStatus("Running");
+      }
+    });
+
+
   };
 
   // called when the plugin is stopped or encounters an error
