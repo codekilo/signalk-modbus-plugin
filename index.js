@@ -114,7 +114,7 @@ module.exports = function(app) {
     Promise.allSettled(promises).then(function() {
       app.debug('promises resolved');
       if (clients.length == 0) {
-        app.stop();
+        plugin.stop();
       } else {
         app.setProviderStatus("Running");
       }
@@ -214,6 +214,34 @@ module.exports = function(app) {
                     }
                   }
                 }
+              }
+            }
+          }
+        }
+      }
+    }
+  };
+
+  // set the order for fields and make the arrays unorderable
+  plugin.uiSchema = {
+    connections: {
+      "ui:options": {
+        orderable: false
+      },
+      items: {
+        "ui:order": ["connection", "pollingInterval", "slaves"],
+        slaves: {
+          "ui:options": {
+            orderable: false
+          },
+          items: {
+            "ui:order": ["slaveID", "mappings"],
+            mappings: {
+              "ui:options": {
+                orderable: false
+              },
+              items: {
+                "ui:order": ["operation", "register", "path", "conversion"]
               }
             }
           }
