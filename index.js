@@ -17,9 +17,21 @@ module.exports = function(app) {
    */
   function handleData(data, mapping, slaveID, expression) {
     app.debug(data);
+    var i;
+    switch (String(mapping.dataType)) {
+      case 'uint16':
+      case 'int16':
+        i = data.data[0];
+        break;
+      case 'uint32':
+      case 'int32':
+      case 'float':
+        i = (data.data[0] << 16) | data.data[1];
+        break;
+    }
     // context for jexl, x is the data, other constants can be added here
     var context = {
-      x: data.data[0]
+      x: i
     };
     var value = expression.evalSync(context);
     // denormalized SignalK delta for a single value
@@ -55,18 +67,30 @@ module.exports = function(app) {
   function pollModbus(client, mapping, slaveID, expression) {
     client.setID(slaveID);
     var promise;
+    var length;
+    switch (String(mapping.dataType)) {
+      case 'uint16':
+      case 'int16':
+        length = 1;
+        break;
+      case 'uint32':
+      case 'int32':
+      case 'float':
+        length = 2;
+        break;
+    }
     switch (String(mapping.operation)) {
       case 'fc1':
-        promise = client.readCoils(mapping.register, 1);
+        promise = client.readCoils(mapping.register, length);
         break;
       case 'fc2':
-        promise = client.readDiscreteInputs(mapping.register, 1);
+        promise = client.readDiscreteInputs(mapping.register, length);
         break;
       case 'fc3':
-        promise = client.readHoldingRegisters(mapping.register, 1);
+        promise = client.readHoldingRegisters(mapping.register, length);
         break;
       case 'fc4':
-        promise = client.readInputRegisters(mapping.register, 1);
+        promise = client.readInputRegisters(mapping.register, length);
     }
     promise.then(data => handleData(data, mapping, slaveID, expression))
       .catch(catchError);
@@ -200,6 +224,19 @@ module.exports = function(app) {
                           title: 'register',
                           default: 11
                         },
+                        dataType: {
+                          type: 'string',
+                          title: 'DataType',
+                          enum: ['uint16', 'int16', 'uint32', 'int32', 'float'],
+                          enumNames: [
+                            'Unsigned 16 bit integer',
+                            '16 bit integer',
+                            'Unisgned 32 bit integer',
+                            '32 bit integer',
+                            'IEEE 754 single precision'
+                          ],
+                          default: 'int16'
+                        },
                         path: {
                           type: 'string',
                           title: "Path to store data",
@@ -241,7 +278,7 @@ module.exports = function(app) {
                 orderable: false
               },
               items: {
-                "ui:order": ["operation", "register", "path", "conversion"]
+                "ui:order": ["operation", "register", "dataType", "path", "conversion"]
               }
             }
           }
