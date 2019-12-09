@@ -14,7 +14,7 @@
     "signalk-node-server-plugin"
   ],
   "author": "",
-  "license": "UNLICENSED",
+  "license": "MIT",
   "bugs": {
     "url": "https://github.com/codekilo/signalk-modbus-plugin/issues"
   },
