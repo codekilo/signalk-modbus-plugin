@@ -1,6 +1,6 @@
 {
-  "name": "signalk-modbus-plugin",
-  "version": "0.0.1",
+  "name": "@codekilo/signalk-modbus-client",
+  "version": "1.0.1",
   "description": "a plugin for SignalK to read data via modbus",
   "main": "index.js",
   "scripts": {
@@ -13,7 +13,7 @@
   "keywords": [
     "signalk-node-server-plugin"
   ],
-  "author": "",
+  "author": "Albert Smit <albertsmit93@gmail.com>",
   "license": "MIT",
   "bugs": {
     "url": "https://github.com/codekilo/signalk-modbus-plugin/issues"
