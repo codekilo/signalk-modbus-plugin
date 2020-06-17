@@ -1,5 +1,5 @@
-const PLUGIN_ID = 'signalk-modbus-plugin';
-const PLUGIN_NAME = 'SignalK Modbus plugin';
+const PLUGIN_ID = 'signalk-modbus-client';
+const PLUGIN_NAME = 'SignalK Modbus client';
 module.exports = function(app) {
   var plugin = {};
   const ModbusRTU = require("modbus-serial");

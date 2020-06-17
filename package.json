@@ -1,6 +1,6 @@
 {
   "name": "@codekilo/signalk-modbus-client",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "a plugin for SignalK to read data via modbus",
   "main": "index.js",
   "scripts": {
